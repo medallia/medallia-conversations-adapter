@@ -1,0 +1,32 @@
+{
+  "name": "medallia-conversations-adapter",
+  "version": "1.0.0",
+  "description": "Reference implementation for a Medallia Conversations API connector",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/medallia/medallia-conversations-adapter.git"
+  },
+  "main": "app.js",
+  "scripts": {
+    "start": "NODE_ENV=production node --max-old-space-size=8192 src/server.js",
+    "start-dev": "NODE_ENV=development nodemon --inspect=0.0.0.0:5858 src/server.js",
+    "lint": "eslint --no-eslintrc --config .eslintrc.js ./src"
+  },
+  "dependencies": {
+    "async": "^2.6.1",
+    "body-parser": "^1.15.0",
+    "compression": "^1.7.3",
+    "express": "^4.16.4",
+    "got": "^9.6.0",
+    "helmet": "^3.16.0",
+    "hpp": "^0.2.2",
+    "lodash": "^4.17.11"
+  },
+  "devDependencies": {
+    "eslint": "^5.16.0",
+    "eslint-config-airbnb-base": "^13.1.0",
+    "eslint-plugin-jest": "^23.20.0",
+    "eslint-plugin-import": "^2.16.0"
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "verbose": true,
+  "exitcrash": true,
+  "delay": "2500",
+  "ext": "js json pegjs",
+  "ignore": [
+    ".vscode",
+    ".git",
+    "node_modules",
+    "tests/**"
+  ],
+  "watch": [
+    "src/**/*.js"
+  ]
+}
