@@ -1,5 +1,4 @@
 # Medallia Conversations Adapter
-
 This project is a reference implementation of a skeleton adapter to receive
 and deliver messages with Medallia Conversations. Developed and maintained
 as a standalone app in order to leverage the Message Connector API
@@ -21,13 +20,37 @@ sequence of commands:
 
 1. `git clone <where ever we host the skeleton>`
 2. Set environment variable:
-    * `export CONVO_WEBHOOK_URL=<MEDALLIA_CONVERSATION_HOST>`
-    * `export SHARED_SECRET=<32_CHARACTER_STRING>`
-    * `export ACCESS_TOKEN=<STRING that is configured in the channel>`
+    * `export CONVO_WEBHOOK_URL=<MEDALLIA_CONVERSATION_HOST>/cg/mc/custom/<CHANNEL_GUID>`
+      1. For conversations inbound messages
+        * `export AUTH_TYPE_INBOUND=<It can be 'Oauth2' or 'Signature'>`
+        * `export SHARED_SECRET=<32_CHARACTER_STRING only for Signature>` 
+        * `export CONVO_INSTANCE_URL=<MEDALLIA_CONVERSATION_HOST>/oauth/token`
+        * `export CLIENT_ID=<CLIENT ID only for Oauth2>` 
+        * `export CLIENT_SECRET=<Secret only for Oauth2>` 
+      2. For conversations outbound messages
+        * `export AUTH_TYPE_OUTBOUND=<It can be 'Oauth2' or 'API-Token'>`
+        * `export ACCESS_TOKEN=<STRING that is configured in the channel only for API-Token auth type>`
 3. `npm install`
 4. `npm start`
 
 This will start a service on port 1338.
+
+### Auth Configuration
+For inbound conversations configuration you can setup 2 auth types:
+* Signature: This is used to generate signature of the body to send it to Medallia Conversations with the SHARED_SECRET key. In the converation side, under the Signed request auth type, this Secret should match. The string must be 32 characters long. 
+* Oauth2: It will use the Conversations OAuth server. You will need the following configuration CONVO_INSTANCE_URL, CLIENT_ID and CLIENT_SECRET.
+  * CONVO_INSTANCE_URL: <MEDALLIA_CONVERSATION_HOST>/oauth/token
+  * CLIENT_ID: Client ID from Conversation
+  * CLIENT_SECRET: Client secret from Conversation
+
+For outbound conversations configuration you can setup 2 auth types:
+* API-Token: This method will validate the header/query Token conversation sends against the ACCESS_TOKEN.
+* Oauth2: It will use the Client OAuth Server. There is a Test server for this porpouse here and the default configuration you must set up in the conversations side is the following.
+  * OAuth2 server URL: http://<ADAPTER_HOST>:1338/token
+  * Client ID: ConversationsClient
+  * Client secret: S3cr3t123!
+
+All this configurations from the selected methods should match the Conversation's channel Auth settings.
 
 ### Docker
 
@@ -49,12 +72,7 @@ This will start a service on port 1338.
     2.  *Page ID* A unique identification in the conversations system for your adapter.
         * We are using `1234` in this example
     3.  *App ID* `1234`
-    4.  *Secret*  The string must be 32 characters long. This is used to generate
-        signature of the body to send it to Medallia Conversations
-        * This example is the `SHARED_SECRET` configured in Conversations
-          `<32_CHARACTER_STRING>` above.
-    5.  *Token* A string to verify send message. You *must* configure
-        accordingly and provide as env variable ACCESS_TOKEN.
+    4.  Configure inbound and outbound auth settings following the recommendations from "Auth Configuration"
 3.  Create a conversation on your instance.
     1.  Add keyword `hello`
     2.  Create a dialog type `statement` with `Hello World!` in the

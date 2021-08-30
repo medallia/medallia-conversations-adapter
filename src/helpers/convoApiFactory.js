@@ -1,4 +1,5 @@
 const _ = require('lodash');
+const oauthClient = require('./OAuthClient');
 const generateSignature = require('../helpers/generateSignature');
 
 function buildBody(senderId, pageId, inBody, type = 'message') {
@@ -44,14 +45,31 @@ function buildBody(senderId, pageId, inBody, type = 'message') {
   return body;
 }
 
-function sendPostRequest(got, url, body) {
+async function getAuthorization(authSettings) {
+  let authzVal = null;
+  if (authSettings && authSettings.authTypeInbound === 'Oauth2') {
+    console.log('getting access token');
+    const token = await oauthClient.getAccessToken(authSettings);
+    authzVal = `Bearer ${token}`;
+  }
+  return authzVal;
+}
+
+async function sendPostRequest(got, url, authSettings, body) {
+  const headers = {};
   const newRequest = {
     url,
     options: {
-      body: JSON.stringify(body)
+      body: JSON.stringify(body),
+      headers
     }
   };
-
+  const authzVal = await getAuthorization(authSettings);
+  console.debug('Adding Authorization header value', authzVal);
+  if (authzVal) {
+    headers.Authorization = authzVal;
+  }
+  console.debug('Sending POST request to ', newRequest.url, ' with options: ', newRequest.options);
   return got.post(newRequest.url, newRequest.options);
 }
 
@@ -64,7 +82,7 @@ function convoApiFactory(url, pageId, authSettings, dependencies) {
       // Next hook will generate and add a valid signature to every
       beforeRequest: [
         (options) => {
-          if (options.body) {
+          if (authSettings.authType === 'Signature' && options.body) {
             const signature = generateSignature(options.body, authSettings.secret);
             const updatedOptions = {
               headers: {
@@ -74,6 +92,7 @@ function convoApiFactory(url, pageId, authSettings, dependencies) {
             };
             // eslint-disable-next-line no-param-reassign
             options.headers = updatedOptions.headers;
+            console.log('Updated request headers to ', options.headers);
           }
         }
       ]
@@ -86,7 +105,7 @@ function convoApiFactory(url, pageId, authSettings, dependencies) {
       console.log(`sending text message to Convo: ${JSON.stringify({
         body, url
       })}`);
-      return sendPostRequest(got, url, body);
+      return sendPostRequest(got, url, authSettings, body);
     },
     sendImage: (senderId, imageUrl) => {
       const body = buildBody(senderId, pageId, {
@@ -100,7 +119,7 @@ function convoApiFactory(url, pageId, authSettings, dependencies) {
         ]
       });
       console.log(`sending image message to Convo ${JSON.stringify({ body, url })}`);
-      return sendPostRequest(got, url, body);
+      return sendPostRequest(got, url, authSettings, body);
     },
     sendMedia: (senderId, mediaUrl, mediaType) => {
       const body = buildBody(senderId, pageId, {
@@ -114,7 +133,7 @@ function convoApiFactory(url, pageId, authSettings, dependencies) {
         ]
       });
       console.log(`sending  ${mediaType} message to Convo ${JSON.stringify({ body, url })}`);
-      return sendPostRequest(got, url, body);
+      return sendPostRequest(got, url, authSettings, body);
     },
     sendDelivery: (senderId, mid) => {
       const body = buildBody(senderId, pageId, {
@@ -125,7 +144,7 @@ function convoApiFactory(url, pageId, authSettings, dependencies) {
 
       }, 'delivery');
       console.log(`sending Delivery: ${JSON.stringify({ body, url })}`);
-      return sendPostRequest(got, url, body);
+      return sendPostRequest(got, url, authSettings, body);
     },
     sendDeliveryFailure: () => {
       console.log('sending Delivery failure not implemented in conversations side.');
@@ -139,7 +158,7 @@ function convoApiFactory(url, pageId, authSettings, dependencies) {
         }, 'read'
       );
       console.log(`sending Read ${JSON.stringify({ body, url })}`);
-      return sendPostRequest(got, url, body);
+      return sendPostRequest(got, url, authSettings, body);
     }
   };
 }

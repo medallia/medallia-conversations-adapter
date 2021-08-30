@@ -10,6 +10,7 @@ COPY ./package.json /usr/src/app/package.json
 COPY ./package-lock.json /usr/src/app/package-lock.json
 
 ENV SHARED_SECRET=<32_CHARACTER_STRING>
+ENV CONVO_INSTANCE_URL=https://<MEDALLIA_CONVERSATION_HOST>
 ENV CONVO_WEBHOOK_URL=https://<MEDALLIA_CONVERSATION_HOST>/cg/mc/custom/<CHANNEL_GUID>
 
 RUN env && npm ci --loglevel warn

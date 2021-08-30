@@ -1,6 +1,7 @@
 const got = require('got');
 const express = require('express');
 const convoApiFactory = require('./helpers/convoApiFactory');
+const authSettings = require('../auth-settings');
 
 const url = process.env.CONVO_WEBHOOK_URL;
 
@@ -9,10 +10,6 @@ const router = express.Router();
 router.post('/messages', (req, res) => {
   console.log(`Receiving post to skeleton webhook (/messages): ${JSON.stringify(req.body)}`);
   const body = req.body;
-  const secret = process.env.SHARED_SECRET;
-  const authSettings = {
-    secret
-  };
   console.log(`Receiving post to skeleton webhook (/messages): ${JSON.stringify(authSettings)}`);
 
   const convoApi = convoApiFactory(url, body.page_id, authSettings, { got });
@@ -28,10 +25,6 @@ router.post('/messages', (req, res) => {
 router.post('/deliveries', (req, res) => {
   console.log(`Receiving post to skeleton webhook (/deliveries): ${JSON.stringify(req.body)}`);
   const body = req.body;
-  const secret = process.env.SHARED_SECRET;
-  const authSettings = {
-    secret
-  };
   console.log(`Receiving post to skeleton webhook (/deliveries): ${JSON.stringify(authSettings)}`);
 
   const convoApi = convoApiFactory(url, body.page_id, authSettings, { got });
