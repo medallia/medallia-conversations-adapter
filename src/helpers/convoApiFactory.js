@@ -1,8 +1,8 @@
 const _ = require('lodash');
-const generateSignature = require('../helpers/generateSignature');
+const oauthClient = require('./OAuthClient');
 
 function buildBody(senderId, pageId, inBody, type = 'message') {
-  console.log(`parameters to buildBody: ${JSON.stringify({
+  console.log(`parameters to buildBody ${JSON.stringify({
     senderId, pageId, inBody, type
   })}`);
 
@@ -44,14 +44,29 @@ function buildBody(senderId, pageId, inBody, type = 'message') {
   return body;
 }
 
-function sendPostRequest(got, url, body) {
+async function getAuthorization(authSettings) {
+  let authzVal = null;
+  console.log('getting access token');
+  const token = await oauthClient.getAccessToken(authSettings);
+  authzVal = `Bearer ${token}`;
+  
+  return authzVal;
+}
+
+async function sendPostRequest(got, url, authSettings, body) {
+  const headers = {};
   const newRequest = {
     url,
     options: {
-      body: JSON.stringify(body)
+      body: JSON.stringify(body),
+      headers
     }
   };
-
+  const authzVal = await getAuthorization(authSettings);
+  if (authzVal) {
+    headers.Authorization = authzVal;
+  }
+  console.debug(`Sending POST request to ${newRequest.url} with options ${newRequest.options}`);
   return got.post(newRequest.url, newRequest.options);
 }
 
@@ -59,34 +74,16 @@ function convoApiFactory(url, pageId, authSettings, dependencies) {
   const got = dependencies.got.extend({
     headers: {
       'content-type': 'application/json'
-    },
-    hooks: {
-      // Next hook will generate and add a valid signature to every
-      beforeRequest: [
-        (options) => {
-          if (options.body) {
-            const signature = generateSignature(options.body, authSettings.secret);
-            const updatedOptions = {
-              headers: {
-                ...options.headers,
-                'X-Hub-Signature': signature
-              }
-            };
-            // eslint-disable-next-line no-param-reassign
-            options.headers = updatedOptions.headers;
-          }
-        }
-      ]
     }
   });
 
   return {
     sendText: (senderId, inBody) => {
       const body = buildBody(senderId, pageId, inBody);
-      console.log(`sending text message to Convo: ${JSON.stringify({
+      console.log(`sending text message to Convo ${JSON.stringify({
         body, url
       })}`);
-      return sendPostRequest(got, url, body);
+      return sendPostRequest(got, url, authSettings, body);
     },
     sendImage: (senderId, imageUrl) => {
       const body = buildBody(senderId, pageId, {
@@ -100,7 +97,7 @@ function convoApiFactory(url, pageId, authSettings, dependencies) {
         ]
       });
       console.log(`sending image message to Convo ${JSON.stringify({ body, url })}`);
-      return sendPostRequest(got, url, body);
+      return sendPostRequest(got, url, authSettings, body);
     },
     sendMedia: (senderId, mediaUrl, mediaType) => {
       const body = buildBody(senderId, pageId, {
@@ -114,7 +111,7 @@ function convoApiFactory(url, pageId, authSettings, dependencies) {
         ]
       });
       console.log(`sending  ${mediaType} message to Convo ${JSON.stringify({ body, url })}`);
-      return sendPostRequest(got, url, body);
+      return sendPostRequest(got, url, authSettings, body);
     },
     sendDelivery: (senderId, mid) => {
       const body = buildBody(senderId, pageId, {
@@ -124,8 +121,8 @@ function convoApiFactory(url, pageId, authSettings, dependencies) {
         watermark: Date.now(),
 
       }, 'delivery');
-      console.log(`sending Delivery: ${JSON.stringify({ body, url })}`);
-      return sendPostRequest(got, url, body);
+      console.log(`sending Delivery ${JSON.stringify({ body, url })}`);
+      return sendPostRequest(got, url, authSettings, body);
     },
     sendDeliveryFailure: () => {
       console.log('sending Delivery failure not implemented in conversations side.');
@@ -139,7 +136,7 @@ function convoApiFactory(url, pageId, authSettings, dependencies) {
         }, 'read'
       );
       console.log(`sending Read ${JSON.stringify({ body, url })}`);
-      return sendPostRequest(got, url, body);
+      return sendPostRequest(got, url, authSettings, body);
     }
   };
 }

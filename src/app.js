@@ -5,6 +5,7 @@ const hpp = require('hpp');
 const helmet = require('helmet');
 const skeletonRouter = require('./skeletonRouter');
 const convoRouter = require('./convoRouter');
+const oauthServer = require('./helpers/TestOAuthServer');
 
 const app = express();
 
@@ -27,5 +28,6 @@ app.get('/state', (req, res) => {
 
 app.use('/', skeletonRouter);
 app.use('/custom', convoRouter);
+app.use(oauthServer.router);
 
 module.exports = app;
