@@ -1,16 +1,13 @@
-// test OAuth server that supports only client_credentials grant type
-// with a fixed set of client id and secret values configured in auth-settings.js
+// This implements a basic OAuth 2.0-compatible token server for use with this reference implementation.
+// It only supports client_credentials grants and uses the static client_id/client_secret values that are
+// configured in auth-settings.js.
 
 const basicAuth = require('express-basic-auth');
 const crypto = require('crypto');
 const router = require('express').Router();
 
-const Cache = require('ttl');
-const { oauthServer } = require('../../auth-settings');
-
-const cache = new Cache({
-  ttl: 3600 * 1000
-});
+const { oauthServer, defaultOAuthExpiresSecs } = require('../../auth-settings');
+const cache = require('./cache');
 
 const staticAuth = basicAuth({
   users: oauthServer.clients
@@ -23,17 +20,12 @@ router.post(oauthServer.tokenPath, staticAuth, (req, res) => {
   } else {
     const token = crypto.randomBytes(16).toString('hex');
     const { auth } = req;
-    if (auth.user) cache.put(token, auth.user);
+    if (auth.user) {
+      cache.put(token, auth.user);
+    }
     console.info(`Issued new access token: ${token} for client ${auth.user || 'unknown'}`);
-    res.status(200).send({ access_token: token, expires_in: 3600 });
+    res.status(200).send({ access_token: token, expires_in: defaultOAuthExpiresSecs });
   }
-});
-
-// This is just to confirm the token is valid and get the client info for the token
-router.get('/userInfo', (req, res) => {
-  const token = req.query.token;
-  const user = cache.get(token);
-  return user ? res.status(200).send({ user }) : res.sendStatus(400);
 });
 
 function isTokenValid(token) {

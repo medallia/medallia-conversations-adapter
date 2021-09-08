@@ -13,13 +13,12 @@ router.post('/me/messages', (req, res) => {
   })}`);
 
   const authz = req.get('Authorization');
-  console.log('Authorization header value = ', authz);
   let valid = false;
   if (authz && authz.startsWith('Bearer')) {
     const token = authz.split(' ')[1];
-    if(authSettings.authTypeOutbound === 'Oauth2'){
+    if (authSettings.authTypeOutbound === 'OAuth') {
       valid = isTokenValid(token);
-    }else if(authSettings.authTypeOutbound === 'API-Token'){
+    } else if (authSettings.authTypeOutbound === 'API-Token') {
       valid = _.isEqual(token, authSettings.accessToken);
     }
     console.log('Successfully verified Bearer access token');

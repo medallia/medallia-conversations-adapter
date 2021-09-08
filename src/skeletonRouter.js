@@ -3,7 +3,7 @@ const express = require('express');
 const convoApiFactory = require('./helpers/convoApiFactory');
 const authSettings = require('../auth-settings');
 
-const url = process.env.CONVO_WEBHOOK_URL;
+const url = `${process.env.CONVO_API_GATEWAY}/cg/mc/custom/${process.env.CHANNEL_GUID}`;
 
 const router = express.Router();
 
